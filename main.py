@@ -6,9 +6,9 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Preluăm cheia Replicate din variabilele de mediu
-REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
-os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
+# Setează cheia direct – poți folosi variabilă sau scrie direct cheia aici
+REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN") or "r8_ORN2qhbR6uqRqmOVoH5wEDPDpORHoY42x9rSu"
+client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 @app.route("/", methods=["GET"])
 def home():
@@ -26,8 +26,8 @@ def generate():
         input_file.save(input_path)
         mask_file.save(mask_path)
 
-        # Trimite cererea la Replicate (model de inpainting)
-        output = replicate.run(
+        # Trimite cererea la Replicate (model inpainting SD 1.5)
+        output = client.run(
             "stability-ai/stable-diffusion-inpainting:6cf94c5dbd41d2b8e3fd3709fcabff96049b145c109f4f5a77d1045c22f1b7cf",
             input={
                 "image": open(input_path, "rb"),
