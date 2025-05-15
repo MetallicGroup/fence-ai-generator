@@ -1,18 +1,46 @@
-from fastapi import FastAPI, UploadFile, Form
-from fastapi.responses import JSONResponse
-from utils.replicate_api import run_inpainting
-from utils.imgbb import upload_to_imgbb
+import os
+import replicate
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-app = FastAPI()
+app = Flask(__name__)
+CORS(app)
 
-@app.post("/generate")
-async def generate_image(image: UploadFile, mask: UploadFile, prompt: str = Form(...)):
-    image_bytes = await image.read()
-    mask_bytes = await mask.read()
+# Preluăm cheia Replicate din variabilele de mediu
+REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
+os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
 
+@app.route("/", methods=["GET"])
+def home():
+    return "🟢 Server funcționează!"
+
+@app.route("/generate", methods=["POST"])
+def generate():
     try:
-        output_image = run_inpainting(image_bytes, mask_bytes, prompt)
-        image_url = upload_to_imgbb(output_image)
-        return {"status": "success", "url": image_url}
+        input_file = request.files["input"]
+        mask_file = request.files["mask"]
+        prompt = request.form["prompt"]
+
+        input_path = "/tmp/input.png"
+        mask_path = "/tmp/mask.png"
+        input_file.save(input_path)
+        mask_file.save(mask_path)
+
+        # Trimite cererea la Replicate (model de inpainting)
+        output = replicate.run(
+            "stability-ai/stable-diffusion-inpainting:6cf94c5dbd41d2b8e3fd3709fcabff96049b145c109f4f5a77d1045c22f1b7cf",
+            input={
+                "image": open(input_path, "rb"),
+                "mask": open(mask_path, "rb"),
+                "prompt": prompt
+            }
+        )
+
+        return jsonify({"output_url": output}), 200
+
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
