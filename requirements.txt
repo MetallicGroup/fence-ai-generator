@@ -1,6 +1,7 @@
 flask
 requests
 torch
+torchvision
 transformers
 opencv-python-headless
 Pillow
