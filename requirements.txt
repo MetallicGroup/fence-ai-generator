@@ -1,3 +1,9 @@
 flask
-flask-cors
-replicate
+requests
+torch
+transformers
+opencv-python-headless
+Pillow
+numpy
+rembg
+git+https://github.com/facebookresearch/segment-anything.git
